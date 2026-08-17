@@ -1,0 +1,11 @@
+{
+  "boise-id": {
+    "label": "Boise, ID",
+    "state": "ID",
+    "state_fips": "16",
+    "counties": [
+      {"name": "Ada County", "fips": "001"},
+      {"name": "Canyon County", "fips": "027"}
+    ]
+  }
+}
