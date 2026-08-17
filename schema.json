@@ -1,0 +1,58 @@
+{
+  "categories": {
+    "population_growth": {
+      "label": "Population & Growth",
+      "fields": {
+        "population": {"type": "number", "source": "api", "api_source": "census_acs", "score_input": true, "score_direction": "neutral", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Suburb population (ACS 5-year estimate)"},
+        "median_age": {"type": "number", "source": "api", "api_source": "census_acs", "score_input": true, "score_direction": "neutral", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Median age"},
+        "median_household_income": {"type": "number", "source": "api", "api_source": "census_acs", "score_input": true, "score_direction": "higher_better", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Median household income, ACS 5-year estimate"},
+        "growth_rate": {"type": "number", "source": "api", "api_source": "census_bps", "score_input": true, "score_direction": "higher_better", "requires_citation": true, "low_confidence": true, "caveat": "Building-permit data is often published at county level, not per-suburb -- may render as a county-level proxy shown per suburb.", "schema_version": 1, "description": "New housing units authorized per 1,000 existing homes (Building Permits Survey, county-level proxy)"}
+      }
+    },
+    "commute": {
+      "label": "Commute & Traffic",
+      "fields": {
+        "commute_time_min": {"type": "number", "source": "api", "api_source": "census_acs", "score_input": true, "score_direction": "lower_better", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Mean travel time to work, minutes (ACS 5-year estimate) -- a commute-time proxy for traffic, not a congestion index"}
+      }
+    },
+    "crime": {
+      "label": "Crime & Safety",
+      "fields": {
+        "violent_crime_rate": {"type": "number", "source": "llm", "score_input": true, "score_direction": "lower_better", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Violent crime rate vs. national average"},
+        "property_crime_rate": {"type": "number", "source": "llm", "score_input": true, "score_direction": "lower_better", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Property crime rate vs. national average"},
+        "safety_index": {"type": "number", "source": "llm", "highlight": true, "score_input": true, "score_direction": "higher_better", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Overall safety index (1-100)"}
+      }
+    },
+    "weather": {
+      "label": "Weather & Climate",
+      "fields": {
+        "monthly_climate_table": {"type": "table", "table_columns": ["month", "avg_high_f", "avg_low_f", "avg_rainfall_in", "avg_snowfall_in"], "source": "llm", "score_input": false, "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "12-month table of average high/low temp, rainfall, snowfall. One citation for the whole table (e.g. NOAA climate normals), not per-cell. Display-only, not a score input."}
+      }
+    },
+    "schools": {
+      "label": "Schools",
+      "fields": {
+        "school_list_ratings": {"type": "string", "source": "llm", "score_input": true, "score_direction": "higher_better", "requires_citation": true, "low_confidence": true, "caveat": "School ratings are LLM-synthesized -- as fabrication-prone as any LLM-estimated number, rendered with the same visible caveat as a low-confidence field rather than presented with false authority.", "schema_version": 1, "description": "List of schools serving this suburb with their ratings"},
+        "school_locations": {"type": "string", "source": "api", "api_source": "overpass", "score_input": false, "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Named schools and straight-line distance, from OpenStreetMap POI data. Display context for school_list_ratings, not independently scored."}
+      }
+    },
+    "amenities": {
+      "label": "Amenities & Recreation",
+      "fields": {
+        "retail_target_distance_mi": {"type": "number", "source": "api", "api_source": "overpass", "score_input": true, "score_direction": "lower_better", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Straight-line distance to nearest Target, miles"},
+        "retail_costco_distance_mi": {"type": "number", "source": "api", "api_source": "overpass", "score_input": true, "score_direction": "lower_better", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Straight-line distance to nearest Costco, miles"},
+        "retail_wholefoods_distance_mi": {"type": "number", "source": "api", "api_source": "overpass", "score_input": true, "score_direction": "lower_better", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Straight-line distance to nearest Whole Foods / Trader Joe's / Sprouts, miles"},
+        "mountain_biking_distance_mi": {"type": "number", "source": "api", "api_source": "overpass", "score_input": true, "score_direction": "lower_better", "requires_citation": true, "low_confidence": true, "caveat": "OpenStreetMap trail tagging is inconsistent -- a large distance may mean no nearby trail, or an untagged one. Query returning zero results is recorded as confirmed_absent, not unresolved.", "schema_version": 1, "description": "Straight-line distance to nearest mapped mountain-bike trail, miles"},
+        "pickleball_distance_mi": {"type": "number", "source": "api", "api_source": "overpass", "score_input": true, "score_direction": "lower_better", "requires_citation": true, "low_confidence": true, "caveat": "Same OSM tagging caveat as mountain_biking_distance_mi.", "schema_version": 1, "description": "Straight-line distance to nearest mapped pickleball court, miles"},
+        "rec_center_distance_mi": {"type": "number", "source": "api", "api_source": "overpass", "score_input": true, "score_direction": "lower_better", "requires_citation": true, "low_confidence": false, "schema_version": 1, "description": "Straight-line distance to nearest recreation center, miles"}
+      }
+    },
+    "self_sufficiency": {
+      "label": "Self-Sufficiency (thin)",
+      "fields": {
+        "grid_reliability": {"type": "string", "source": "llm", "score_input": false, "requires_citation": true, "low_confidence": true, "caveat": "No established public source at suburb granularity -- prototype against 2-3 real suburbs before finalizing; if fill rate is low, fall back to a county-level display value.", "schema_version": 1, "description": "Frequency of power outages/rolling blackouts/seasonal grid failures. Display-only, not a Family Fit score input."},
+        "water_source": {"type": "string", "source": "llm", "score_input": false, "requires_citation": true, "low_confidence": true, "caveat": "Same fill-rate caveat as grid_reliability.", "schema_version": 1, "description": "Where municipal/regional water originates. Display-only, not a Family Fit score input."}
+      }
+    }
+  }
+}
