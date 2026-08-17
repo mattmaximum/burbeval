@@ -1,0 +1,385 @@
+<style>
+  :root {
+    --bg: #fbf9f4;
+    --card-bg: #fffdf8;
+    --text: #2b2b28;
+    --muted: #6b6a63;
+    --border: #ded7c4;
+    --accent: #8a6d3b;
+    --risk-high: #b3452b;
+    --risk-moderate: #b08628;
+    --risk-low: #4a7a5a;
+    --risk-unknown: #8a8578;
+    --flagged-bg: #fbeee9;
+    --flagged-border: #c0603f;
+    --fit-strong: #4a7a5a;
+    --fit-good: #7d9a44;
+    --fit-weak: #c17f3a;
+    --fit-dealbreaker: #b3452b;
+    --fit-needs-data: #8a8578;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #211f1a;
+      --card-bg: #2a2823;
+      --text: #ece7da;
+      --muted: #a49d8a;
+      --border: #4a4638;
+      --accent: #d3b57f;
+      --risk-high: #e08064;
+      --risk-moderate: #dcb45f;
+      --risk-low: #82b494;
+      --risk-unknown: #9b9686;
+      --flagged-bg: #3a2a24;
+      --flagged-border: #d3805f;
+      --fit-strong: #82b494;
+      --fit-good: #a8c26a;
+      --fit-weak: #dc9c5f;
+      --fit-dealbreaker: #e08064;
+      --fit-needs-data: #9b9686;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 24px 16px 64px;
+    line-height: 1.55;
+    font-size: 16px;
+  }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  h2 { font-size: 1.15rem; margin: 0; }
+  a { color: var(--accent); }
+  .meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+  .back { display: inline-block; margin-bottom: 16px; text-decoration: none; }
+  .overall-summary {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin: 4px 0 20px;
+    font-size: 1.02rem;
+  }
+  .category-summary {
+    color: var(--muted);
+    font-style: italic;
+    margin: -4px 0 12px;
+    font-size: 0.94rem;
+  }
+  .pros-cons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    margin: 0 0 14px;
+    font-size: 0.88rem;
+  }
+  .pros-cons ul { list-style: none; padding: 0; margin: 0; }
+  .pros-cons li {
+    padding: 2px 0 2px 18px;
+    position: relative;
+  }
+  .pros li::before {
+    content: "+";
+    position: absolute; left: 2px;
+    color: var(--risk-low);
+    font-weight: 700;
+  }
+  .cons li::before {
+    content: "\2212";
+    position: absolute; left: 2px;
+    color: var(--risk-high);
+    font-weight: 700;
+  }
+  @media (max-width: 480px) {
+    .pros-cons { grid-template-columns: 1fr; }
+  }
+  .completion-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+  .fit-scores {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .fit-badge {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 999px;
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .fit-badge .fit-lens-name { font-weight: 400; opacity: 0.85; }
+  .fit-strong { background: var(--fit-strong); }
+  .fit-good { background: var(--fit-good); }
+  .fit-weak { background: var(--fit-weak); }
+  .fit-dealbreaker { background: var(--fit-dealbreaker); }
+  .fit-needs-data { background: var(--fit-needs-data); }
+  .scorecard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .scorecard-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .scorecard-item .label { font-size: 0.78rem; color: var(--muted); }
+  .scorecard-item .value { font-size: 1.1rem; font-weight: 600; }
+  nav.toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    font-size: 0.88rem;
+    margin-bottom: 28px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  nav.toc a { text-decoration: none; }
+  details.category {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    padding: 4px 16px;
+  }
+  details.category summary {
+    cursor: pointer;
+    padding: 12px 0;
+    font-weight: 600;
+    list-style: none;
+  }
+  details.category summary::-webkit-details-marker { display: none; }
+  details.category summary::before {
+    content: "▸ ";
+    color: var(--muted);
+  }
+  details.category[open] summary::before {
+    content: "▾ ";
+  }
+  .field-table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; }
+  .field-table th, .field-table td {
+    text-align: left;
+    padding: 8px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    font-size: 0.94rem;
+  }
+  .field-table th { color: var(--muted); font-weight: 500; font-size: 0.82rem; }
+  .field-table--fields th:nth-child(1), .field-table--fields td:nth-child(1) { width: 20%; }
+  .field-table--fields th:nth-child(2), .field-table--fields td:nth-child(2) { width: 58%; }
+  .field-table--fields th:nth-child(3), .field-table--fields td:nth-child(3) { width: 22%; }
+  .field-label { white-space: nowrap; color: var(--muted); }
+  .info-icon, .has-tooltip {
+    position: relative;
+    cursor: help;
+  }
+  .info-icon {
+    display: inline-block;
+    color: var(--muted);
+    font-size: 0.82em;
+    margin-left: 4px;
+    border-bottom: 1px dotted var(--muted);
+  }
+  .tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    transition: opacity 0.12s;
+    position: absolute;
+    bottom: 130%;
+    left: 0;
+    background: var(--text);
+    color: var(--bg);
+    padding: 7px 10px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-weight: 400;
+    white-space: normal;
+    width: 220px;
+    z-index: 10;
+    line-height: 1.35;
+    pointer-events: none;
+  }
+  .info-icon:hover .tooltip-text, .info-icon:focus .tooltip-text,
+  .has-tooltip:hover .tooltip-text, .has-tooltip:focus .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+  }
+  .source-link { font-size: 0.82rem; white-space: nowrap; }
+  .caveat { color: var(--muted); font-size: 0.85rem; }
+  .placeholder { color: var(--muted); font-style: italic; }
+  .flagged-row td {
+    background: var(--flagged-bg);
+    border-left: 3px solid var(--flagged-border);
+  }
+  .risk-badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #fff;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  .table-scroll { overflow-x: auto; }
+  .table-scroll table { min-width: 480px; }
+  .chart-wrap { margin: 12px 0 20px; }
+  .chart-wrap svg { max-width: 100%; height: auto; }
+  ul.city-list { list-style: none; padding: 0; }
+  .city-row {
+    display: grid;
+    grid-template-columns: minmax(120px, 1.1fr) 100px minmax(90px, 1fr) 110px 135px 155px;
+    align-items: center;
+    gap: 12px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .city-header-row {
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 8px;
+  }
+  .city-info { min-width: 0; }
+  ul.city-list a { text-decoration: none; font-weight: 600; font-size: 1.05rem; }
+  .city-county, .city-fields, .city-bd-score { color: var(--muted); font-size: 0.88rem; }
+  .city-fit-cell .fit-badge {
+    padding: 2px 8px;
+    font-size: 0.76rem;
+    gap: 4px;
+  }
+  .empty { color: var(--muted); }
+  .site-intro { margin: 0 0 14px; }
+  .site-intro-notes { margin: 0 0 14px; padding-left: 20px; }
+  .site-intro-notes li { margin-bottom: 6px; }
+  .list-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .button-link {
+    display: inline-block;
+    padding: 7px 16px;
+    border-radius: 6px;
+    background: var(--accent);
+    color: var(--bg);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .button-link:hover { opacity: 0.88; }
+  .sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .sort-controls select {
+    padding: 5px 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.9rem;
+  }
+  .compare-section {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 28px;
+  }
+  .compare-section h2 { font-size: 1.1rem; margin: 0 0 12px; }
+  .compare-selectors { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .compare-selectors select {
+    padding: 6px 10px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 0.92rem;
+    max-width: 220px;
+  }
+  .compare-vs { color: var(--muted); font-weight: 600; font-size: 0.85rem; }
+  .compare-table-scroll { overflow-x: auto; }
+  .compare-grid { min-width: 560px; }
+  .compare-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 1fr;
+    gap: 14px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: start;
+  }
+  .compare-row.compare-header-row {
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 10px;
+  }
+  .compare-row.compare-header-row .compare-col {
+    font-size: 0.98rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .compare-label {
+    color: var(--muted);
+    font-size: 0.82rem;
+    padding-top: 2px;
+  }
+  .compare-col { font-size: 0.9rem; word-break: break-word; }
+  .compare-col em { color: var(--muted); font-style: italic; }
+  @media (max-width: 480px) {
+    body { padding: 16px 12px 48px; font-size: 15px; }
+    .scorecard { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+    /* Report pages: a nowrap field-label forces the whole table (and
+       page) wider than the viewport once a label is longer than 20% of
+       a phone's width -- fine at desktop widths, breaks on mobile. */
+    .field-label { white-space: normal; }
+    /* Home page: the 6-column city-row grid has ~670px of fixed/minimum
+       column widths, far past any phone viewport. Stack each row into a
+       labeled card instead -- .city-header-row is hidden and each cell's
+       data-label attribute (set in the template) supplies the inline
+       label via ::before. Compare page is deliberately NOT touched here;
+       its horizontal-scroll fallback on mobile is intentional. */
+    .city-header-row { display: none; }
+    ul.city-list .city-row {
+      display: block;
+      padding: 10px 0;
+    }
+    ul.city-list .city-row > div {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      padding: 3px 0;
+    }
+    ul.city-list .city-row > div[data-label]::before {
+      content: attr(data-label);
+      color: var(--muted);
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+  }
+</style>

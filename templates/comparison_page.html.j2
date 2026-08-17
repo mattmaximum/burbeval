@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ metro_label }} — Suburb Comparison</title>
+{% include "_style.html.j2" %}
+<style>
+  table.compare { border-collapse: collapse; width: 100%; }
+  table.compare th, table.compare td { border: 1px solid var(--border); padding: 0.5em 0.75em; text-align: left; vertical-align: top; }
+  table.compare th { cursor: pointer; background: var(--card-bg); position: sticky; top: 0; }
+  table.compare th.sortable:hover { color: var(--accent); }
+  .placeholder { color: var(--muted); font-style: italic; }
+  .caveat-inline { color: var(--muted); font-size: 0.85em; }
+  .score-cell { font-weight: bold; }
+</style>
+</head>
+<body>
+<h1>{{ metro_label }} — Suburb Comparison</h1>
+<p class="caveat">Researched by an AI model and public data APIs, not a person &mdash; it can
+and does get things wrong. Check the source link before relying on anything important.</p>
+<p class="caveat">Family Fit score: v1 equal-weighted, percentile-rank normalized within this
+metro's suburbs. A suburb missing a field has that field excluded from its own average
+(see "fields scored" column) rather than penalized or disqualified.</p>
+
+<div class="table-scroll">
+<table class="compare" id="compare-table">
+  <thead>
+    <tr>
+      <th class="sortable" data-sort="name">Suburb</th>
+      <th class="sortable" data-sort="score">Family Fit</th>
+      {% for field in fields %}
+      <th class="sortable" data-sort="{{ field.key }}">{{ field.label }}{% if field.low_confidence %}<span class="info-icon" tabindex="0">&#9432;<span class="tooltip-text">{{ field.caveat }}</span></span>{% endif %}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for suburb in suburbs %}
+    <tr>
+      <td>{{ suburb.name }}</td>
+      <td class="score-cell" data-value="{{ suburb.score if suburb.score is not none else -1 }}">
+        {% if suburb.score is not none %}
+          {{ "%.0f"|format(suburb.score * 100) }}/100
+          <span class="caveat-inline">({{ suburb.fields_scored }}/{{ suburb.fields_total }} fields)</span>
+        {% else %}
+          <span class="placeholder">No data yet</span>
+        {% endif %}
+      </td>
+      {% for field in fields %}
+      {% set cell = suburb.field_cells.get(field.key) %}
+      <td data-value="{{ cell.sort_value if cell and cell.sort_value is not none else '' }}">
+        {% if cell is none or cell.status != "valid" %}
+          <span class="placeholder">
+            {%- if cell and cell.status == "confirmed_absent" -%}
+              None found
+            {%- elif cell and cell.status == "flagged" -%}
+              Flagged as incorrect
+            {%- else -%}
+              Not yet evaluated
+            {%- endif -%}
+          </span>
+        {% else %}
+          {{ cell.display_value }}
+          {% if cell.source_url %}&middot; <a class="source-link" href="{{ cell.source_url }}">source</a>{% endif %}
+        {% endif %}
+      </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+</div>
+
+<script>
+(function () {
+  var table = document.getElementById("compare-table");
+  if (!table) return;
+  var tbody = table.tBodies[0];
+  table.querySelectorAll("th.sortable").forEach(function (th, colIndex) {
+    var ascending = true;
+    th.addEventListener("click", function () {
+      var rows = Array.prototype.slice.call(tbody.rows);
+      rows.sort(function (a, b) {
+        var av = a.cells[colIndex].getAttribute("data-value");
+        var bv = b.cells[colIndex].getAttribute("data-value");
+        if (av === null) av = a.cells[colIndex].textContent.trim();
+        if (bv === null) bv = b.cells[colIndex].textContent.trim();
+        var an = parseFloat(av), bn = parseFloat(bv);
+        var cmp = (!isNaN(an) && !isNaN(bn)) ? (an - bn) : String(av).localeCompare(String(bv));
+        return ascending ? cmp : -cmp;
+      });
+      rows.forEach(function (r) { tbody.appendChild(r); });
+      ascending = !ascending;
+    });
+  });
+})();
+</script>
+</body>
+</html>
