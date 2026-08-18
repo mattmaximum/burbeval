@@ -43,6 +43,23 @@ class StoredFieldValue(BaseModel):
     schema_version: int
 
 
+class SuburbRecord(BaseModel):
+    name: str
+    geoid: Optional[str] = None
+    kind: Optional[str] = None  # "incorporated" | "cdp"
+    categories: dict[str, dict[str, StoredFieldValue]] = Field(default_factory=dict)
+
+
+class MetroRecord(BaseModel):
+    """suburbs/{metro-slug}.json -- one file per metro, every suburb's
+    fields, matching the design doc's pipeline diagram (suburbs as rows,
+    not per-suburb standalone files)."""
+    metro_slug: str
+    metro_label: str
+    suburbs: dict[str, SuburbRecord] = Field(default_factory=dict)  # keyed by suburb slug
+    first_evaluated_date: Optional[str] = None
+
+
 def load_schema() -> dict:
     with open(SCHEMA_PATH) as f:
         return json.load(f)
@@ -60,6 +77,15 @@ def llm_fields(schema: dict, category_key: str) -> dict[str, dict]:
 def api_fields(schema: dict, category_key: str) -> dict[str, dict]:
     fields = schema["categories"][category_key]["fields"]
     return {k: v for k, v in fields.items() if v.get("source") == "api"}
+
+
+def fetchable_fields(schema: dict, category_key: str) -> dict[str, dict]:
+    """Every field in a category, api- or llm-sourced -- burbeval has no
+    derived/synthesized fields yet (unlike reloeval's bd_score/
+    category_summary), so this is currently just all fields, but kept as
+    its own function so lint.py's gap-detection reads the same way
+    reloeval's does and survives a future derived field being added."""
+    return schema["categories"][category_key]["fields"]
 
 
 def build_field_value_model(field_def: dict, enforce_bounds: bool = True) -> Type[BaseModel]:

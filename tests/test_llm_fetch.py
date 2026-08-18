@@ -124,6 +124,14 @@ async def test_fetch_llm_category_only_sends_llm_sourced_fields():
 
 
 @pytest.mark.asyncio
+async def test_fetch_llm_fields_for_metro_requires_api_key(monkeypatch):
+    monkeypatch.delenv("OPENROUTER_API_KEY", raising=False)
+    schema = load_schema()
+    with pytest.raises(RuntimeError, match="OPENROUTER_API_KEY"):
+        await llm_fetch.fetch_llm_fields_for_metro(schema, ["Meridian"], "Boise, ID")
+
+
+@pytest.mark.asyncio
 async def test_fetch_llm_fields_for_suburb_covers_all_categories():
     schema = load_schema()
 

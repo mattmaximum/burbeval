@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 from datetime import date
 from typing import Optional
@@ -30,6 +31,7 @@ from models import (
     llm_fields,
 )
 
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 CATEGORY_MODEL = "anthropic/claude-haiku-4.5"
 WEB_PLUGIN_MAX_RESULTS = 10
 
@@ -131,7 +133,10 @@ async def fetch_llm_fields_for_metro(
     """Every suburb's LLM categories, concurrently across suburbs too --
     per the design doc's concurrency requirement. Returns
     {suburb_name: {category_key: {field_key: StoredFieldValue}}}."""
-    client = AsyncOpenAI(base_url="https://openrouter.ai/api/v1")
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY is not set.")
+    client = AsyncOpenAI(base_url=OPENROUTER_BASE_URL, api_key=api_key)
     results = await asyncio.gather(*[
         fetch_llm_fields_for_suburb(client, schema, name, metro_label) for name in suburb_names
     ])
