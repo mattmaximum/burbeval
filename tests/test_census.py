@@ -21,8 +21,8 @@ def test_enumerate_suburbs_dedupes_places_spanning_counties(monkeypatch):
     def fake_places(geometry, spatial_ref, layer_id):
         if layer_id == census.INCORPORATED_PLACES_LAYER:
             return [
-                {"NAME": "Meridian city", "GEOID": "1650770", "PLACE": "50770"},
-                {"NAME": "Boise City city", "GEOID": "1608830", "PLACE": "08830"},
+                {"NAME": "Meridian city", "GEOID": "1650770", "PLACE": "50770", "INTPTLAT": "+43.6121", "INTPTLON": "-116.3915"},
+                {"NAME": "Boise City city", "GEOID": "1608830", "PLACE": "08830", "INTPTLAT": "+43.6150", "INTPTLON": "-116.2023"},
             ]
         return []  # no CDPs in this fake county
 
@@ -48,8 +48,8 @@ def test_enumerate_suburbs_includes_incorporated_and_cdp(monkeypatch):
 
     def fake_places(geometry, spatial_ref, layer_id):
         if layer_id == census.INCORPORATED_PLACES_LAYER:
-            return [{"NAME": "Eagle city", "GEOID": "1624070", "PLACE": "24070"}]
-        return [{"NAME": "Avimor CDP", "GEOID": "1603760", "PLACE": "03760"}]
+            return [{"NAME": "Eagle city", "GEOID": "1624070", "PLACE": "24070", "INTPTLAT": "+43.6955", "INTPTLON": "-116.3540"}]
+        return [{"NAME": "Avimor CDP", "GEOID": "1603760", "PLACE": "03760", "INTPTLAT": "+43.8460", "INTPTLON": "-116.2560"}]
 
     monkeypatch.setattr(census, "_places_intersecting", fake_places)
 
@@ -90,3 +90,9 @@ def test_live_enumerate_ada_and_canyon_county_matches_local_knowledge():
     # Meridian, Nampa, and Star span both counties -- confirms dedup works
     # against real (not fake) TIGERweb data too.
     assert len(names) == len(result), "duplicate suburb entries in live result"
+
+    # Every suburb needs real coordinates for overpass.py's distance calc --
+    # Idaho is roughly lat 42-49, lon -117 to -111.
+    for p in result:
+        assert 42.0 < p["lat"] < 49.0, f"{p['name']} lat out of Idaho range: {p['lat']}"
+        assert -117.0 < p["lon"] < -111.0, f"{p['name']} lon out of Idaho range: {p['lon']}"

@@ -73,7 +73,7 @@ def _places_intersecting(geometry: dict, spatial_ref: dict, layer_id: int) -> li
             "geometryType": "esriGeometryPolygon",
             "spatialRel": "esriSpatialRelIntersects",
             "inSR": json.dumps(spatial_ref),
-            "outFields": "NAME,STATE,PLACE,GEOID,FUNCSTAT",
+            "outFields": "NAME,STATE,PLACE,GEOID,FUNCSTAT,INTPTLAT,INTPTLON",
             "returnGeometry": "false",
             "f": "json",
         },
@@ -86,7 +86,10 @@ def enumerate_suburbs(state_fips: str, counties: list[dict[str, str]]) -> list[d
     the metro. A place intersecting more than one of the metro's own counties
     (e.g. Meridian spanning Ada and Canyon) appears once, not once per county.
 
-    Each entry: {"name": str, "geoid": str, "place_fips": str, "kind": "incorporated"|"cdp"}
+    Each entry: {"name": str, "geoid": str, "place_fips": str, "kind":
+    "incorporated"|"cdp", "lat": float, "lon": float} -- lat/lon (interior
+    point, INTPTLAT/INTPTLON) feed overpass.py's nearest-distance
+    calculation.
     """
     by_geoid: dict[str, dict[str, Any]] = {}
     for county in counties:
@@ -100,6 +103,8 @@ def enumerate_suburbs(state_fips: str, counties: list[dict[str, str]]) -> list[d
                 "geoid": attrs["GEOID"],
                 "place_fips": attrs["PLACE"],
                 "kind": "incorporated",
+                "lat": float(attrs["INTPTLAT"]),
+                "lon": float(attrs["INTPTLON"]),
             }
         for attrs in _places_intersecting(geometry, spatial_ref, CDP_LAYER):
             by_geoid[attrs["GEOID"]] = {
@@ -107,6 +112,8 @@ def enumerate_suburbs(state_fips: str, counties: list[dict[str, str]]) -> list[d
                 "geoid": attrs["GEOID"],
                 "place_fips": attrs["PLACE"],
                 "kind": "cdp",
+                "lat": float(attrs["INTPTLAT"]),
+                "lon": float(attrs["INTPTLON"]),
             }
 
     return sorted(by_geoid.values(), key=lambda p: p["name"])
