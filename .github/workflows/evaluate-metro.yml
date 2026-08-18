@@ -1,0 +1,135 @@
+# Issue → Workflow → Pages flow (same shape as reloeval's evaluate-city.yml):
+#
+#   issue opened (title "City, ST" matching a metros.json entry, "evaluate" label)
+#     │
+#     ▼
+#   job-level gate: author == repo owner AND "evaluate" label present
+#     │ (anything else: job skipped entirely, no comment, no run)
+#     ▼
+#   run_evaluation.py: evaluate_metro() → gap-check
+#     │
+#     ├─ MetroNotFoundError / other exception / gap-rate ≥90% ──► comment
+#     │                                                           explaining
+#     │                                                           failure,
+#     │                                                           issue stays
+#     │                                                           open, no
+#     │                                                           commit/deploy
+#     │
+#     ▼ success
+#   build_index.py, commit suburbs/ + _site/, push -- retried up to 5x on a
+#   concurrent-push race, same as reloeval
+#     │
+#     ▼
+#   upload-pages-artifact (_site/) → deploy-pages
+#     │
+#     ▼
+#   comment with live report link + any lint gaps, close issue
+name: Evaluate metro
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+  issues: write
+
+concurrency:
+  group: evaluate-metro-deploy
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    if: >
+      github.event.issue.user.login == github.repository_owner &&
+      contains(github.event.issue.labels.*.name, 'evaluate')
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run evaluation
+        id: run_eval
+        continue-on-error: true
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          CENSUS_API_KEY: ${{ secrets.CENSUS_API_KEY }}
+        run: python .github/scripts/run_evaluation.py "${{ github.event.issue.title }}"
+
+      - name: Rebuild, commit, and push (retries on a concurrent-push race)
+        if: steps.run_eval.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3 4 5; do
+            python build_index.py
+            git add suburbs/ _site/
+            if git diff --staged --quiet; then
+              break
+            fi
+            git commit -m "Evaluate ${{ github.event.issue.title }} (issue #${{ github.event.issue.number }})"
+            if git push; then
+              break
+            fi
+            if [ "$attempt" = 5 ]; then
+              echo "::error::git push kept getting rejected after 5 attempts -- giving up"
+              exit 1
+            fi
+            echo "Push rejected (attempt $attempt/5) -- resyncing with origin/main and rebuilding"
+            git fetch origin main
+            git reset --mixed origin/main
+            sleep $((attempt * 5))
+          done
+
+      - name: Upload Pages artifact
+        if: success() && steps.run_eval.outcome == 'success'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to Pages
+        if: success() && steps.run_eval.outcome == 'success'
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Comment success and close issue
+        if: success() && steps.run_eval.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SLUG="${{ steps.run_eval.outputs.slug }}"
+          PAGE_URL="${{ steps.deployment.outputs.page_url }}"
+          gh issue comment "${{ github.event.issue.number }}" --body "$(cat <<EOF
+          Evaluated **$SLUG**. Comparison page: ${PAGE_URL}${SLUG}.html
+
+          ${{ steps.run_eval.outputs.gap_summary }}
+          EOF
+          )"
+          gh issue close "${{ github.event.issue.number }}"
+
+      - name: Comment failure
+        if: steps.run_eval.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment "${{ github.event.issue.number }}" --body "$(cat <<EOF
+          Couldn't finish evaluating this request:
+
+          ${{ steps.run_eval.outputs.error_message }}
+
+          Leaving this issue open — no partial data was committed or deployed.
+          EOF
+          )"

@@ -1,0 +1,25 @@
+name: New metro request (owner only)
+description: "Compare a metro's suburbs — owner-only, see warning inside"
+title: "City, ST"
+labels: ["evaluate"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Owner-only — this won't do anything if you're not the repo
+        owner.** Every evaluation makes real, billed API calls, so the
+        workflow silently ignores this issue unless it's opened by the
+        repo owner: no run, no cost, no error message, just a
+        normal-looking issue that never gets picked up.
+
+        The title must exactly match a key in `metros.json` (by label) --
+        e.g. `Boise, ID`. A metro not yet in `metros.json` needs to be
+        added there first, with its state, state FIPS code, and county
+        FIPS codes.
+  - type: input
+    id: notes
+    attributes:
+      label: Notes (optional)
+      description: Not read by the pipeline — only the issue title matters.
+    validations:
+      required: false
