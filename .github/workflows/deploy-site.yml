@@ -1,0 +1,51 @@
+# Manually-triggered rebuild + deploy, independent of the evaluate-metro
+# Issue trigger -- same shape as reloeval's backfill.yml. Exists so the
+# Pages site can be (re)deployed without waiting for a new metro request,
+# including the very first deploy: build_index.py already handles the
+# zero-metros case (prints "No metros evaluated yet"), so this is what
+# gets an empty-state page live before anything has been evaluated.
+name: Deploy site
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: evaluate-metro-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build index
+        run: |
+          mkdir -p _site
+          python build_index.py
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
