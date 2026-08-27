@@ -1,5 +1,13 @@
 # Burbeval
 
+> **⚠️ Draft / experimental.** This is an early, unfinished build — no live
+> evaluation has run yet (still needs `CENSUS_API_KEY` and `OPENROUTER_API_KEY`
+> configured as repo secrets), and two fields render as "unresolved" by design
+> until they're fixed (see Status below). Expect rough edges.
+
+**Live site:** https://mattmaximum.github.io/burbeval/ (empty until the first
+metro is evaluated)
+
 **This is a personal project**, sibling to
 [reloeval](https://github.com/mattmaximum/reloeval), built to compare the suburbs
 of a metro area for a real family relocation decision. Where reloeval researches
@@ -37,10 +45,18 @@ started from (see `git log` on the first commit for the design session).
 
 ## Status
 
-Early build. Suburb enumeration (`census.py`) is live and tested against real
-Census TIGERweb data — no API key required for that part. Fetching
-population/demographics requires a free Census API key
-(`CENSUS_API_KEY` — sign up at https://api.census.gov/data/key_signup.html).
+Early build, not yet run for real. The full pipeline (enumeration, Census,
+Overpass, LLM fetch, scoring, rendering, lint, and the GitHub Actions
+Issue→Pages workflow) is built and unit-tested, and GitHub Pages is enabled,
+but no metro has actually been evaluated yet:
+
+- Needs `CENSUS_API_KEY` (free — https://api.census.gov/data/key_signup.html)
+  and `OPENROUTER_API_KEY` added as repo secrets before a real run can happen.
+- `growth_rate` (Building Permits Survey) and `commute_time_min` (wrong ACS
+  variable caught during build, not yet fixed) intentionally render
+  "unresolved" rather than a wrong or placeholder number.
+- Suburb enumeration (`census.py`) itself is live-tested against real Census
+  TIGERweb data and needs no API key.
 
 ## License
 
