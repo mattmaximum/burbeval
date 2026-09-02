@@ -7,5 +7,29 @@
       {"name": "Ada County", "fips": "001"},
       {"name": "Canyon County", "fips": "027"}
     ]
+  },
+  "pocatello-id": {
+    "label": "Pocatello, ID",
+    "state": "ID",
+    "state_fips": "16",
+    "counties": [
+      {"name": "Bannock County", "fips": "005"}
+    ]
+  },
+  "idaho-falls-id": {
+    "label": "Idaho Falls, ID",
+    "state": "ID",
+    "state_fips": "16",
+    "counties": [
+      {"name": "Bonneville County", "fips": "019"}
+    ]
+  },
+  "lewiston-id": {
+    "label": "Lewiston, ID",
+    "state": "ID",
+    "state_fips": "16",
+    "counties": [
+      {"name": "Nez Perce County", "fips": "069"}
+    ]
   }
 }
