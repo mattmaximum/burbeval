@@ -90,6 +90,17 @@ def enumerate_suburbs(state_fips: str, counties: list[dict[str, str]]) -> list[d
     "incorporated"|"cdp", "lat": float, "lon": float} -- lat/lon (interior
     point, INTPTLAT/INTPTLON) feed overpass.py's nearest-distance
     calculation.
+
+    Filters out any place whose own STATE attribute doesn't match
+    state_fips -- caught live against real data: a county whose boundary
+    runs along a river state line (Nez Perce County, ID / the Snake River)
+    spatially intersects neighboring-state places (Clarkston and Asotin,
+    both actually in Washington) whose polygons touch that line. The
+    ArcGIS query has no state filter of its own (INCORPORATED_PLACES_LAYER
+    is a nationwide layer), so intersection alone isn't enough -- burbeval
+    scopes metros to a single state by design (see Constraints), so a
+    neighboring-state place is out of scope even when its polygon touches
+    the boundary, not a suburb worth including.
     """
     by_geoid: dict[str, dict[str, Any]] = {}
     for county in counties:
@@ -98,6 +109,8 @@ def enumerate_suburbs(state_fips: str, counties: list[dict[str, str]]) -> list[d
         spatial_ref = county_geo["spatialReference"]
 
         for attrs in _places_intersecting(geometry, spatial_ref, INCORPORATED_PLACES_LAYER):
+            if attrs["STATE"] != state_fips:
+                continue
             by_geoid[attrs["GEOID"]] = {
                 "name": attrs["NAME"],
                 "geoid": attrs["GEOID"],
@@ -107,6 +120,8 @@ def enumerate_suburbs(state_fips: str, counties: list[dict[str, str]]) -> list[d
                 "lon": float(attrs["INTPTLON"]),
             }
         for attrs in _places_intersecting(geometry, spatial_ref, CDP_LAYER):
+            if attrs["STATE"] != state_fips:
+                continue
             by_geoid[attrs["GEOID"]] = {
                 "name": attrs["NAME"],
                 "geoid": attrs["GEOID"],
